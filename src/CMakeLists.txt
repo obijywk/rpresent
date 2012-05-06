@@ -1,0 +1,5 @@
+add_executable(egl_test egl_test.cpp)
+target_link_libraries(egl_test EGL GLESv2)
+if (PLATFORM STREQUAL "RaspberryPi")
+  target_link_libraries(egl_test bcm_host)
+endif ()
