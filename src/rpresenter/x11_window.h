@@ -1,3 +1,6 @@
+#ifndef RPRESENTER_X11_WINDOW_H
+#define RPRESENTER_X11_WINDOW_H
+
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
 #include <GL/gl.h>
@@ -10,6 +13,8 @@ class X11Window {
   X11Window();
   ~X11Window();
 
+  void SwapBuffers();
+
   // returns false if the window was closed
   bool ProcessEvents();
 
@@ -20,3 +25,5 @@ class X11Window {
 };
 
 }
+
+#endif

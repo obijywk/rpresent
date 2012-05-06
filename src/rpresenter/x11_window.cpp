@@ -80,6 +80,10 @@ X11Window::~X11Window() {
   XCloseDisplay(display_);
 }
 
+void X11Window::SwapBuffers() {
+  glXSwapBuffers(display_, window_);
+}
+
 bool X11Window::ProcessEvents() {
   int num_messages = XPending(display_);
   for (int i = 0; i < num_messages; i++) {
