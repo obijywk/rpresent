@@ -1,0 +1,33 @@
+rpresent - experimenting with 2D vector graphics on Raspberry Pi
+
+At the moment, this is just a demo of OpenVG text rendering.
+
+Requires:
+  libfreetype6-dev
+  EGL, OpenGL ES 2, OpenVG
+    (these can be found in /opt/vc on Raspberry Pi,
+     and in mesa dev packages on desktop linux)
+  bcm_host
+    (on Raspberry Pi only)
+
+Build and run on Raspberry Pi (tested on raspbian):
+  mkdir build
+  cd build
+  cmake -DPLATFORM=PI ../
+  make
+  src/rpresent
+
+Build and run for X11 on desktop linux:
+  mkdir build
+  cd build
+  cmake -DPLATFORM=X11 ../
+  make
+  src/rpresent
+
+Using a cross-compilation toolchain named 'arm-raspbian-linux-gnueabi-gcc'
+(built using crosstool-ng and with Raspberry Pi headers and libs copied in)
+Cross-compile for Raspberry Pi:
+  mkdir build
+  cd build
+  cmake -DPLATFORM=PI -DCROSS_COMPILE=TRUE
+  make
