@@ -1,6 +1,32 @@
 #include <stdio.h>
 #include "window.h"
 
+#ifdef PLATFORM_PI
+#include <stdlib.h>
+#include <string.h>
+#include <sys/select.h>
+#include <termios.h>
+#include <unistd.h>
+
+namespace {
+
+struct termios orig_termios;
+void reset_terminal_mode() {
+  tcsetattr(0, TCSANOW, &orig_termios);
+}
+
+void set_conio_terminal_mode() {
+  struct termios new_termios;
+  tcgetattr(0, &orig_termios);
+  memcpy(&new_termios, &orig_termios, sizeof(new_termios));
+  atexit(reset_terminal_mode);
+  cfmakeraw(&new_termios);
+  tcsetattr(0, TCSANOW, &new_termios);
+}
+
+}  // namespace
+#endif
+
 namespace rpresent {
 
 Window::Window()
@@ -88,6 +114,7 @@ bool Window::Initialize() {
 
 #ifdef PLATFORM_PI
   bcm_host_init();
+  set_conio_terminal_mode();
 
   uint32_t bcm_width, bcm_height;
   int32_t success = graphics_get_display_size(0, &bcm_width, &bcm_height);
@@ -240,7 +267,17 @@ bool Window::HandleEvents() {
 #endif
 
 #ifdef PLATFORM_PI
-  // TODO: pi input
+  struct timeval tv = { 0L, 0L };
+  fd_set fds;
+  FD_ZERO(&fds);
+  FD_SET(STDIN_FILENO, &fds);
+  if (select(1, &fds, NULL, NULL, &tv)) {
+    unsigned char c;
+    read(STDIN_FILENO, &c, sizeof(c));
+    if (c == 'q') {
+      run = false;
+    }
+  }
 #endif
 
   return run;
