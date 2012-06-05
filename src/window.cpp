@@ -3,10 +3,48 @@
 
 namespace rpresent {
 
-Window::Window() {
+Window::Window()
+    :
+#ifdef PLATFORM_X11
+      x_display_(NULL),
+#endif
+#ifdef PLATFORM_PI
+      dispman_display_(0),
+      dispman_update_(0),
+      dispman_element_(0),
+#endif
+      display_(EGL_NO_DISPLAY),
+      surface_(EGL_NO_SURFACE),
+      context_(EGL_NO_CONTEXT),
+      width_(1920),
+      height_(1080) {
 }
 
 Window::~Window() {
+  if (display_ != EGL_NO_DISPLAY) {
+    if (!eglMakeCurrent(
+          display_, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT)) {
+      fprintf(stderr, "eglMakeCurrent failed\n");
+    }
+    if (!eglTerminate(display_)) {
+      fprintf(stderr, "eglTerminate failed\n");
+    }
+  }
+
+#ifdef PLATFORM_X11
+  if (x_display_) {
+    XCloseDisplay(x_display_);
+  }
+#endif
+
+#ifdef PLATFORM_PI
+  if (dispman_update_ && dispman_element_) {
+    vc_dispmanx_element_remove(dispman_update_, dispman_element_);
+  }
+  if (dispman_display_) {
+    vc_dispmanx_display_close(dispman_display_);
+  }
+#endif
 }
 
 bool Window::Initialize() {
@@ -14,40 +52,38 @@ bool Window::Initialize() {
   EGLNativeWindowType native_window;
 
 #ifdef PLATFORM_X11
-  // TODO: make window full screen
-  width_ = 1920;
-  height_ = 1080;
+  // TODO: choose a reasonable window size
 
-  Display* x_display = XOpenDisplay(0);
-  if (!x_display) {
+  x_display_ = XOpenDisplay(0);
+  if (!x_display_) {
     fprintf(stderr, "XOpenDisplay failed\n");
     return false;
   }
 
-  long x_screen = XDefaultScreen(x_display);
-  ::Window root_window = RootWindow(x_display, x_screen);
-  int depth = DefaultDepth(x_display, x_screen);
+  long x_screen = XDefaultScreen(x_display_);
+  ::Window root_window = RootWindow(x_display_, x_screen);
+  int depth = DefaultDepth(x_display_, x_screen);
   XVisualInfo x_visual_info;
-  XMatchVisualInfo(x_display, x_screen, depth, TrueColor, &x_visual_info);
+  XMatchVisualInfo(x_display_, x_screen, depth, TrueColor, &x_visual_info);
 
   XSetWindowAttributes set_window_attrs;
-  set_window_attrs.colormap = XCreateColormap(x_display, root_window,
+  set_window_attrs.colormap = XCreateColormap(x_display_, root_window,
 					      x_visual_info.visual, AllocNone);
-  set_window_attrs.event_mask = StructureNotifyMask | ExposureMask |
-      ButtonPressMask | ButtonReleaseMask | KeyPressMask | KeyReleaseMask;
+  set_window_attrs.event_mask =
+      StructureNotifyMask | ExposureMask | KeyPressMask | KeyReleaseMask;
 
-  ::Window x_window = XCreateWindow(x_display, root_window,
+  ::Window x_window = XCreateWindow(x_display_, root_window,
                                     0, 0, width_, height_,
                                     0, CopyFromParent,
                                     InputOutput, CopyFromParent,
                                     CWBackPixel | CWBorderPixel |
                                     CWEventMask | CWColormap,
                                     &set_window_attrs);
-  XMapWindow(x_display, x_window);
-  XFlush(x_display);
+  XMapWindow(x_display_, x_window);
+  XFlush(x_display_);
 
-  native_display = (EGLNativeDisplayType)x_display;
-  native_window = (EGLNativeWindowType)x_window;
+  native_display = static_cast<EGLNativeDisplayType>(x_display_);
+  native_window = static_cast<EGLNativeWindowType>(x_window);
 #endif
 
 #ifdef PLATFORM_PI
@@ -62,8 +98,8 @@ bool Window::Initialize() {
   width_ = bcm_width;
   height_ = bcm_height;
 
-  DISPMANX_DISPLAY_HANDLE_T dispman_display = vc_dispmanx_display_open(0);
-  DISPMANX_UPDATE_HANDLE_T dispman_update = vc_dispmanx_update_start(0);
+  dispman_display_ = vc_dispmanx_display_open(0);
+  dispman_update_ = vc_dispmanx_update_start(0);
 
   VC_RECT_T dst_rect, src_rect;
   dst_rect.x = 0;
@@ -74,27 +110,26 @@ bool Window::Initialize() {
   src_rect.y = 0;
   src_rect.width = bcm_width << 16;
   src_rect.height = bcm_height << 16;
-  DISPMANX_ELEMENT_HANDLE_T dispman_element =
-    vc_dispmanx_element_add(dispman_update, dispman_display,
-			    0,  // layer
-			    &dst_rect,
-			    0,  // src
-			    &src_rect,
-			    DISPMANX_PROTECTION_NONE,
-			    0,  // alpha
-			    0,  // clamp
-			    DISPMANX_NO_ROTATE  // transform
-			    );
+  dispman_element_ =
+      vc_dispmanx_element_add(dispman_update_, dispman_display_,
+                              0,  // layer
+                              &dst_rect,
+                              0,  // src
+                              &src_rect,
+                              DISPMANX_PROTECTION_NONE,
+                              0,  // alpha
+                              0,  // clamp
+                              DISPMANX_NO_ROTATE  // transform
+                              );
 
-  vc_dispmanx_update_submit_sync(dispman_update);
+  vc_dispmanx_update_submit_sync(dispman_update_);
 
-  EGL_DISPMANX_WINDOW_T* egl_window = new EGL_DISPMANX_WINDOW_T;
-  egl_window->element = dispman_element;
-  egl_window->width = bcm_width;
-  egl_window->height = bcm_height;
+  egl_window_.element = dispman_element_;
+  egl_window_.width = bcm_width;
+  egl_window_.height = bcm_height;
 
   native_display = EGL_DEFAULT_DISPLAY;
-  native_window = (EGLNativeWindowType)egl_window;
+  native_window = static_cast<EGLNativeWindowType>(&egl_window_);
 #endif
 
   display_ = eglGetDisplay(native_display);
@@ -181,6 +216,34 @@ void Window::SwapBuffers() {
 
 void Window::Clear() {
   vgClear(0, 0, width_, height_);
+}
+
+bool Window::HandleEvents() {
+  bool run = true;
+
+#ifdef PLATFORM_X11
+  XEvent event;
+  KeySym keysym;
+  while (XPending(x_display_)) {
+    XNextEvent(x_display_, &event);
+    switch (event.type) {
+      case KeyPress:
+        keysym = XLookupKeysym((XKeyEvent*)(&event), 0);
+        if (keysym == XK_q) {
+          run = false;
+        }
+        break;
+      default:
+        break;
+    }
+  }
+#endif
+
+#ifdef PLATFORM_PI
+  // TODO: pi input
+#endif
+
+  return run;
 }
 
 }  // namespace rpresent

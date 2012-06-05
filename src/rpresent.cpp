@@ -6,10 +6,14 @@
 
 int main(int argc, char** argv) {
   rpresent::Window window;
-  window.Initialize();
+  if (!window.Initialize()) {
+    return 1;
+  }
 
   rpresent::Text text;
-  text.Initialize();
+  if (!text.Initialize()) {
+    return 1;
+  }
 
   VGfloat red[4] = { 1.0f, 0.0f, 0.0f, 1.0f };
   VGfloat green[4] = { 0.0f, 1.0f, 0.0f, 1.0f };
@@ -24,7 +28,7 @@ int main(int argc, char** argv) {
   int fps = 0;
   char timestr[16];
   strcpy(timestr, "0");
-  while (true) {
+  while (window.HandleEvents()) {
     window.Clear();
     for (int i = 0; i < 16; i++) {
       vgSetParameterfv(paint, VG_PAINT_COLOR, 4, red);
