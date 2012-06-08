@@ -1,9 +1,11 @@
 rpresent - experimenting with 2D vector graphics on Raspberry Pi
 
-At the moment, this is just a demo of OpenVG text rendering.
+At the moment, this contains some demos of OpenVG text and image rendering.
 
 Requires:
   libfreetype6-dev
+  libxml2-dev
+  libmagick++-dev
   EGL, OpenGL ES 2, OpenVG
     (these can be found in /opt/vc on Raspberry Pi,
      and in mesa dev packages on desktop linux)
