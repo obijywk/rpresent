@@ -225,7 +225,6 @@ bool Window::Initialize() {
   }
 
   vgSeti(VG_MATRIX_MODE, VG_MATRIX_PATH_USER_TO_SURFACE);
-  vgSeti(VG_MASKING, VG_TRUE);
 
   VGfloat afClearColor[4] = { 1.0f, 1.0f, 1.0f, 1.0f };
   vgSetfv(VG_CLEAR_COLOR, 4, afClearColor);
