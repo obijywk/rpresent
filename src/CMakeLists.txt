@@ -27,4 +27,4 @@ add_executable(rpresent rpresent.cpp)
 target_link_libraries(rpresent text window)
 
 add_executable(weather_main weather_main.cpp)
-target_link_libraries(weather_main weather window)
+target_link_libraries(weather_main text weather window)
