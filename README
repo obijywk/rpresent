@@ -26,10 +26,3 @@ Build and run for X11 on desktop linux:
   make
   src/rpresent
 
-Using a cross-compilation toolchain named 'arm-raspbian-linux-gnueabi-gcc'
-(built using crosstool-ng and with Raspberry Pi headers and libs copied in)
-Cross-compile for Raspberry Pi:
-  mkdir build
-  cd build
-  cmake -DPLATFORM=PI -DCROSS_COMPILE=TRUE
-  make

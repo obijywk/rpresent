@@ -1,5 +1,8 @@
-include(FindFreetype)
-include_directories(${FREETYPE_INCLUDE_DIRS})
+find_package(Freetype)
+if (FREETYPE_FOUND)
+  include_directories(${FREETYPE_INCLUDE_DIRS})
+  message(STATUS "${FREETYPE_LIBRARIES}")
+endif (FREETYPE_FOUND)
 
 find_package(LibXml2)
 if (LIBXML2_FOUND)
