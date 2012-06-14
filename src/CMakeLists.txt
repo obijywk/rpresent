@@ -14,6 +14,9 @@ if (ImageMagick_FOUND)
   include_directories(${ImageMagick_INCLUDE_DIRS})
 endif (ImageMagick_FOUND)
 
+add_library(image image.cpp)
+target_link_libraries(image OpenVG Magick++)
+
 add_library(text text.cpp)
 target_link_libraries(text OpenVG ${FREETYPE_LIBRARIES})
 
@@ -24,7 +27,7 @@ if (PLATFORM STREQUAL "PI")
 endif ()
 
 add_library(weather weather.cpp)
-target_link_libraries(weather xml2 OpenVG Magick++)
+target_link_libraries(weather xml2 OpenVG image)
 
 add_executable(rpresent rpresent.cpp)
 target_link_libraries(rpresent text window)

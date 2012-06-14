@@ -1,10 +1,10 @@
-#include <Magick++.h>
 #include <libxml/nanohttp.h>
 #include <libxml/parser.h>
 #include <libxml/xpath.h>
 #include <memory>
 #include <stdio.h>
 #include <string.h>
+#include "image.h"
 #include "weather.h"
 
 namespace rpresent {
@@ -48,58 +48,15 @@ bool Weather::Initialize(const std::string& city) {
     return false;
   }
 
-  std::string icon_url =
-      std::string("http://www.google.com") +
-      EvaluateXPath("/xml_api_reply/weather/current_conditions/icon");
-  if (!LoadIcon(icon_url)) {
-    return false;
-  }
-
-  return true;
-}
-
-bool Weather::LoadIcon(const std::string& url) {
   if (icon_ != VG_INVALID_HANDLE) {
     vgDestroyImage(icon_);
     icon_ = VG_INVALID_HANDLE;
   }
-
-  Magick::Image image(url);
-  Magick::Geometry geometry = image.size();
-  icon_ = vgCreateImage(VG_sRGBA_8888, geometry.width(), geometry.height(),
-                        VG_IMAGE_QUALITY_NONANTIALIASED);
+  std::string icon_url =
+      std::string("http://www.google.com") +
+      EvaluateXPath("/xml_api_reply/weather/current_conditions/icon");
+  icon_ = ImageLoader::Load(icon_url);
   if (icon_ == VG_INVALID_HANDLE) {
-    fprintf(stderr, "vgCreateImage failed: %d\n", vgGetError());
-    return false;
-  }
-
-  const Magick::PixelPacket* pixels =
-      image.getConstPixels(0, 0, geometry.width(), geometry.height());
-
-  if (sizeof(Magick::PixelPacket) == 8) {
-    std::unique_ptr<int[]> data(
-      new int[geometry.width() * geometry.height()]);
-    for (int y = 0; y < geometry.height(); y++) {
-      for (int x = 0; x < geometry.width(); x++) {
-        const Magick::PixelPacket* packet = pixels + y*geometry.width() + x;
-        data[(geometry.height() - y - 1) * geometry.width() + x] =
-            ((packet->red >> 8) << 24) + ((packet->green >> 8) << 16) +
-            ((packet->blue >> 8) << 8) + 0xFF;
-      }
-    }
-    vgImageSubData(icon_, data.get(), geometry.width() * 4, VG_sRGBA_8888,
-                   0, 0, geometry.width(), geometry.height());
-  } else if (sizeof(Magick::PixelPacket) == 4) {
-    vgImageSubData(icon_, pixels, geometry.width() * 4, VG_sRGBA_8888,
-                   0, 0, geometry.width(), geometry.height());
-  } else {
-    fprintf(stderr, "unknown Magick PixelPacket size\n");
-    return false;
-  }
-
-  VGErrorCode error_code = vgGetError();
-  if (error_code != VG_NO_ERROR) {
-    fprintf(stderr, "vgImageSubData failed: %d\n", error_code);
     return false;
   }
 

@@ -24,9 +24,6 @@ class Weather {
  private:
   std::string EvaluateXPath(const std::string& path);
 
-  // TODO: refactor to an image class
-  bool LoadIcon(const std::string& url);
-
   xmlDocPtr doc_;
   VGImage icon_;
 };
