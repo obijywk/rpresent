@@ -9,10 +9,10 @@ namespace rpresent {
 
 class Weather {
  public:
-  Weather();
+  explicit Weather(const std::string& city);
   ~Weather();
 
-  bool Initialize(const std::string& city);
+  bool Refresh();
 
   std::string City();
   std::string Condition();
@@ -24,6 +24,7 @@ class Weather {
  private:
   std::string EvaluateXPath(const std::string& path);
 
+  const std::string city_;
   xmlDocPtr doc_;
   VGImage icon_;
 };

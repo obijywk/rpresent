@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <time.h>
 #include "text.h"
 #include "weather.h"
 #include "window.h"
@@ -14,8 +15,8 @@ int main(int argc, char** argv) {
     return 1;
   }
 
-  rpresent::Weather weather;
-  if (!weather.Initialize("New+York")) {
+  rpresent::Weather weather("New York");
+  if (!weather.Refresh()) {
     return 1;
   }
 
@@ -26,6 +27,9 @@ int main(int argc, char** argv) {
 
   int y_offset = 0;
   int y_delta = 1;
+
+  static const time_t kRefreshInterval = 60 * 5;  // 5 minutes
+  time_t last_update_time = time(NULL);
 
   while (window.HandleEvents()) {
     window.Clear();
@@ -40,6 +44,11 @@ int main(int argc, char** argv) {
     vgTranslate(100, 650 - y_offset);
     vgScale(10.0, 10.0);
     vgDrawImage(weather.Icon());
+
+    if (time(NULL) - last_update_time > kRefreshInterval) {
+      weather.Refresh();
+      last_update_time = time(NULL);
+    }
 
     window.SwapBuffers();
 

@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <libxml/nanohttp.h>
 #include <libxml/parser.h>
 #include <libxml/xpath.h>
@@ -9,8 +10,9 @@
 
 namespace rpresent {
 
-Weather::Weather()
-    : doc_(NULL),
+Weather::Weather(const std::string& city)
+    : city_(city),
+      doc_(NULL),
       icon_(VG_INVALID_HANDLE) {
 }
 
@@ -23,10 +25,12 @@ Weather::~Weather() {
   }
 }
 
-bool Weather::Initialize(const std::string& city) {
-  // TODO: escape city
+bool Weather::Refresh() {
+  std::string escaped_city = city_;
+  std::replace(escaped_city.begin(), escaped_city.end(), ' ', '+');
   const std::string url =
-      std::string("http://www.google.com/ig/api?weather=") + city;
+      std::string("http://www.google.com/ig/api?weather=") + escaped_city;
+
   std::unique_ptr<void> context(xmlNanoHTTPOpen(url.c_str(), NULL));
   if (context.get() == NULL) {
     fprintf(stderr, "xmlNanoHTTPOpen failed\n");
@@ -41,6 +45,10 @@ bool Weather::Initialize(const std::string& city) {
     return false;
   }
 
+  if (doc_) {
+    xmlFreeDoc(doc_);
+    doc_ = NULL;
+  }
   doc_ = xmlReadMemory(buffer.get(), strlen(buffer.get()),
                        url.c_str(), NULL, 0);
   if (doc_ == NULL) {
